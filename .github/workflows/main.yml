@@ -1,4 +1,4 @@
-name: Deploy to cPanel
+name: Despliegue a cPanel
 
 on:
   push:
@@ -6,30 +6,39 @@ on:
       - main
 
 jobs:
-  deploy:
+  despliegue:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      
-    - name: Install Dependencies
-      run: composer update
+      - uses: actions/checkout@v4
 
-    - name: Build Assets
-      run: npm install && npm run build
-    - name: Copy .env
-      run: cp .env.example .env
-    - name: Add .env variables
-      run : |
-        echo APP_ENV=local >> .env
-        echo APP_DEBUG=true >> .env
-        echo APP_URL=https://penalito.com >> .env
-    - name: Directory Permissions
-      run: chmod -R 777 storage bootstrap/cache
-    - name: Sync files
-      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-      with:
-        server: ${{ secrets.FTP_SERVER }}
-        username: ${{ secrets.FTP_USERNAME }}
-        password: ${{ secrets.FTP_PASSWORD }}
+      - name: Instalar dependencias
+        run: composer update --optimize-autoloader
+
+      - name: Compilar recursos (si es aplicable)
+        run: npm install && npm run build  # Solo si tu proyecto usa npm
+
+      - name: Copiar .env (opcional, considera la gestión de secretos)
+        run: cp .env.example .env  # Ajusta si usas una convención de nomenclatura diferente
+
+      - name: Configurar variables .env (considera la gestión de secretos)
+        run: |
+          echo APP_ENV=production >> .env
+          echo APP_DEBUG=false >> .env  # Configurar como falso para producción
+          echo APP_URL=https://penalito.com >> .env
+
+      - name: Reparar permisos de archivo (ajustar según tu configuración)
+        run: chmod -R 755 storage bootstrap/cache
+
+      - name: Sincronizar archivos con cPanel
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          
+
+      - name: Verificar despliegue (opcional)
+        run: |
+          curl -sSL https://penalito.com  # Reemplazar con tu URL implementada
+          # Verificar el código de respuesta (debe ser 200)
